@@ -1,0 +1,4 @@
+rootProject.name = 'Classloading'
+include 'Core'
+include 'ExamplePlugin'
+

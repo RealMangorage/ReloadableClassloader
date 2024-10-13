@@ -7,4 +7,5 @@ public sealed interface IPluginContainer permits PluginContainerImpl {
     IPlugin getPlugin();
     IPluginMetadata getMetadata();
     IEventBus getEventBus();
+    void schedule(ITask runnable);
 }

@@ -4,8 +4,6 @@ import org.mangorage.classloader.api.IPlugin;
 import org.mangorage.classloader.api.PluginManager;
 import org.mangorage.classloader.event.ExampleEvent;
 
-import java.security.SecureRandom;
-
 public class ExamplePlugin implements IPlugin {
 
     public ExamplePlugin() {
@@ -17,6 +15,22 @@ public class ExamplePlugin implements IPlugin {
         PluginManager.register(this, ExampleEvent.class, e -> {
             //System.out.println("OBV");
         });
+
+        if (!PluginManager.load)
+            System.out.println("SCHEDULED");
+            PluginManager.schedule(this, (s) -> {
+                while (s.isRunning()) {
+                    System.out.println(s.isRunning());
+                    System.out.println(s.getId());
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                    System.out.println("LOL");
+                }
+            });
+        PluginManager.load = true;
     }
 
     @Override

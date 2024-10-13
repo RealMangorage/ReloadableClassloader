@@ -16,7 +16,7 @@ public final class PluginManagerInternal {
         UNLOADED;
     }
 
-    private static final List<IPluginContainer> plugins = new ArrayList<>();
+    private static final List<PluginContainerImpl> plugins = new ArrayList<>();
     private static final ClassLoader parent = Thread.currentThread().getContextClassLoader().getParent();
     private static State activeState = State.UNLOADED;
 
@@ -55,7 +55,10 @@ public final class PluginManagerInternal {
 
     public static void unload() {
         if (activeState != State.LOADED) return;
-        plugins.forEach(pl -> pl.getPlugin().unload());
+        plugins.forEach(pl -> {
+            pl.getPlugin().unload();
+            pl.disable();
+        });
         activeState = State.UNLOADED;
     }
 

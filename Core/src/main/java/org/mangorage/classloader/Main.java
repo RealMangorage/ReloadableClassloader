@@ -28,7 +28,7 @@ public class Main {
                         new InputStreamReader(pluginFile.getInputStream(infoEntry)),
                         PluginInfo.class
                 );
-                PluginManagerInternal.addPlugin(plp, info);
+                PluginManagerInternal.unloadPlugin(plp, info);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

@@ -19,7 +19,7 @@ public final class PluginManager {
         container.get().schedule(task);
     }
 
-    public static void remove(String id) {
-        PluginManagerInternal.removePlugin(id);
+    public static void unloadPlugin(String id) {
+        PluginManagerInternal.unloadPlugin(id);
     }
 }

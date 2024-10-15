@@ -14,4 +14,7 @@ module org.mangorage.classloader {
     exports org.mangorage.classloader.internal to com.google.gson;
     opens org.mangorage.classloader.internal to com.google.gson;
 
+    exports org.mangorage.classloader.util;
+    opens org.mangorage.classloader.util;
+
 }

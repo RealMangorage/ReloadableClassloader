@@ -3,6 +3,7 @@ package org.mangorage.plugin;
 import org.mangorage.classloader.api.IPlugin;
 import org.mangorage.classloader.api.PluginManager;
 import org.mangorage.classloader.event.ExampleEvent;
+import org.mangorage.classloader.util.ReloadableValue;
 
 public class ExamplePlugin implements IPlugin {
     private static final boolean useDirect = true;
@@ -31,6 +32,7 @@ public class ExamplePlugin implements IPlugin {
 
     @Override
     public void unload() {
-        PluginManager.remove("example");
+        ReloadableValue a;
+        PluginManager.unloadPlugin("example");
     }
 }

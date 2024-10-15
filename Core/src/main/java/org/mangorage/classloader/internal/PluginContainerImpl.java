@@ -6,16 +6,22 @@ import org.mangorage.classloader.api.IPluginContainer;
 import org.mangorage.classloader.api.IPluginMetadata;
 import org.mangorage.classloader.api.ITask;
 import org.mangorage.classloader.api.event.IEventBus;
+import org.mangorage.classloader.util.ReloadableValue;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public final class PluginContainerImpl implements IPluginContainer {
     private final IPluginMetadata metadata;
 
+    private final ReloadableValue<IEventBus> bus = ReloadableValue.of(EventBus::new);
+    private final ReloadableValue<ExecutorService> executorService = ReloadableValue.of(Executors::newCachedThreadPool, s -> {
+        s.shutdownNow();
+        s.close();
+    });
+
     private IPlugin plugin;
     private PluginClassloader classLoader;
-    private IEventBus bus;
-    private ExecutorService executorService;
 
     PluginStatus status = PluginStatus.DISABLED;
 
@@ -35,7 +41,7 @@ public final class PluginContainerImpl implements IPluginContainer {
 
     @Override
     public IEventBus getEventBus() {
-        return bus;
+        return bus.get();
     }
 
     @Override
@@ -45,21 +51,26 @@ public final class PluginContainerImpl implements IPluginContainer {
 
     @Override
     public void schedule(ITask task) {
-        executorService.submit(task::run);
+        executorService.getOptional().ifPresent(s -> s.submit(task::run));
     }
 
     public void disable() {
         this.status = PluginStatus.DISABLED;
-        plugin.unload();
-        this.executorService.shutdownNow();
-        this.executorService.close();
+        this.plugin.unload();
+
+        this.plugin = null;
+        this.classLoader = null;
+
+        this.executorService.unloadValue();
+        this.bus.unloadValue();
     }
 
     public void setActiveState(IPlugin plugin, PluginClassloader classLoader) {
         this.plugin = plugin;
         this.classLoader = classLoader;
-        this.bus = new EventBus();
-        this.executorService = Executors.newCachedThreadPool();
+
+        this.bus.loadValue();
+        this.executorService.loadValue();
         this.status = PluginStatus.ENABLED;
     }
 }

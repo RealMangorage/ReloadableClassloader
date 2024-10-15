@@ -7,8 +7,6 @@ import org.mangorage.classloader.event.Event;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,7 +15,7 @@ public final class PluginManagerInternal {
     private static final Map<String, PluginContainerImpl> plugins = new ConcurrentHashMap<>();
     private static final ClassLoader parent = Thread.currentThread().getContextClassLoader().getParent();
 
-    public static void addPlugin(Path path, PluginInfo pluginInfo) {
+    public static void unloadPlugin(Path path, PluginInfo pluginInfo) {
         try {
             plugins.put(
                     pluginInfo.pluginId(),
@@ -34,7 +32,7 @@ public final class PluginManagerInternal {
         }
     }
 
-    public static void removePlugin(String id) {
+    public static void unloadPlugin(String id) {
         var container = plugins.get(id);
         if (container == null) return;
         disablePlugin(container);

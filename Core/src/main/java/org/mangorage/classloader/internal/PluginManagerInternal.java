@@ -21,7 +21,7 @@ public final class PluginManagerInternal {
 
 
     public static List<PluginContainerImpl> getSortedContainers() {
-        return getContainers().stream().toList();
+        return getContainers().stream().toList().reversed();
     }
 
     public static Collection<PluginContainerImpl> getContainers() {

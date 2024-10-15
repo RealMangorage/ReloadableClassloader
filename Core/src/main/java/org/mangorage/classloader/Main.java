@@ -17,9 +17,9 @@ public class Main {
     public static void main(String[] args) {
 
         List<Path> manualPlugins = List.of(
-                Path.of("F:\\Minecraft Forge Projects\\Classloading\\ExamplePlugin\\build\\libs\\ExamplePlugin.jar"),
-                Path.of("F:\\Minecraft Forge Projects\\Classloading\\ExamplePlugin2\\build\\libs\\ExamplePlugin2.jar"),
-                Path.of("F:\\Minecraft Forge Projects\\Classloading\\ExamplePlugin3\\build\\libs\\ExamplePlugin3.jar")
+                Path.of("ExamplePlugin\\build\\libs\\ExamplePlugin.jar"),
+                Path.of("ExamplePlugin2\\build\\libs\\ExamplePlugin2.jar"),
+                Path.of("ExamplePlugin3\\build\\libs\\ExamplePlugin3.jar")
         );
 
         manualPlugins.forEach(plp -> {

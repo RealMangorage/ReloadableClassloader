@@ -22,7 +22,7 @@ public final class PluginManagerInternal {
     private static final ClassLoader parent = Thread.currentThread().getContextClassLoader().getParent();
 
     public static Collection<PluginContainerImpl> getContainers() {
-        return plugins.values();
+        return plugins.values().stream().toList().reversed();
     }
 
     public static void loadPlugin(Path path, PluginInfo pluginInfo) {
@@ -50,11 +50,11 @@ public final class PluginManagerInternal {
     }
 
     public static void enableAll() {
-        plugins.values().forEach(PluginManagerInternal::enablePlugin);
+        getContainers().forEach(PluginManagerInternal::enablePlugin);
     }
 
     public static void disableAll() {
-        plugins.values().forEach(PluginManagerInternal::disablePlugin);
+        getContainers().forEach(PluginManagerInternal::disablePlugin);
     }
 
     public static void enablePlugin(PluginContainerImpl container) {
@@ -90,7 +90,7 @@ public final class PluginManagerInternal {
     }
 
     public static <E extends Event> void post(Event event) {
-        plugins.values().forEach(pl -> {
+        getContainers().forEach(pl -> {
             if (pl.status == PluginStatus.ENABLED)
                 pl.getEventBus().post(event);
         });

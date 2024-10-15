@@ -7,7 +7,6 @@ import org.mangorage.classloader.event.Event;
 
 import java.net.MalformedURLException;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -21,13 +20,8 @@ public final class PluginManagerInternal {
     public static final ClassLoader context = Thread.currentThread().getContextClassLoader();
     private static final ClassLoader parent = Thread.currentThread().getContextClassLoader().getParent();
 
-
-    public static List<PluginContainerImpl> getSortedContainers() {
+    public static List<PluginContainerImpl> getContainers() {
         return graph.computeContainerList(plugins);
-    }
-
-    public static Collection<PluginContainerImpl> getContainers() {
-        return plugins.values();
     }
 
     public static boolean isLoaded(String id) {
@@ -66,7 +60,7 @@ public final class PluginManagerInternal {
     }
 
     public static void enableAll() {
-        getSortedContainers().forEach(PluginManagerInternal::enablePlugin);
+        getContainers().forEach(PluginManagerInternal::enablePlugin);
     }
 
     public static void disableAll() {

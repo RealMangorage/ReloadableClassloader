@@ -4,7 +4,7 @@
   "depends": [
     {
       "id": "example",
-      "required": false
+      "required": true
     }
   ]
 }

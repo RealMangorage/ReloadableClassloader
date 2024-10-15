@@ -1,3 +1,9 @@
 package org.mangorage.classloader.internal;
 
-public record PluginInfo(String pluginId, String mainClass) {}
+import java.util.List;
+
+public record PluginInfo(
+        String pluginId,
+        String mainClass,
+        List<DependencyInfo> depends
+) {}

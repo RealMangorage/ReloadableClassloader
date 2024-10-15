@@ -2,4 +2,5 @@ rootProject.name = 'Classloading'
 include 'Core'
 include 'ExamplePlugin'
 include 'ExamplePlugin2'
+include 'ExamplePlugin3'
 

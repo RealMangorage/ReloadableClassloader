@@ -18,7 +18,8 @@ public class Main {
 
         List<Path> manualPlugins = List.of(
                 Path.of("F:\\Minecraft Forge Projects\\Classloading\\ExamplePlugin\\build\\libs\\ExamplePlugin.jar"),
-                Path.of("F:\\Minecraft Forge Projects\\Classloading\\ExamplePlugin2\\build\\libs\\ExamplePlugin2.jar")
+                Path.of("F:\\Minecraft Forge Projects\\Classloading\\ExamplePlugin2\\build\\libs\\ExamplePlugin2.jar"),
+                Path.of("F:\\Minecraft Forge Projects\\Classloading\\ExamplePlugin3\\build\\libs\\ExamplePlugin3.jar")
         );
 
         manualPlugins.forEach(plp -> {
@@ -50,8 +51,9 @@ public class Main {
                 System.out.println("Reloading");
                 PluginManagerInternal.disableAll();
                 PluginManagerInternal.enableAll();
-            } catch (InterruptedException e) {
+            } catch (Throwable e) {
                 System.out.println("Fatal Error");
+                e.printStackTrace();
             }
         }
     }

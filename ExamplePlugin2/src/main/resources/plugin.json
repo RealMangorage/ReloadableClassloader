@@ -1,4 +1,10 @@
 {
   "pluginId": "example2",
-  "mainClass": "org.mangorage.plugin2.ExamplePlugin"
+  "mainClass": "org.mangorage.plugin2.ExamplePlugin",
+  "depends": [
+    {
+      "id": "example",
+      "required": true
+    }
+  ]
 }

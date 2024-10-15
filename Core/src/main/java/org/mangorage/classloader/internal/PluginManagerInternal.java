@@ -1,5 +1,6 @@
 package org.mangorage.classloader.internal;
 
+
 import org.mangorage.classloader.api.IPlugin;
 import org.mangorage.classloader.api.IPluginContainer;
 import org.mangorage.classloader.event.Event;
@@ -7,54 +8,61 @@ import org.mangorage.classloader.event.Event;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 public final class PluginManagerInternal {
-    private static final Map<String, PluginContainerImpl> plugins = new ConcurrentHashMap<>();
+    private static final Object lock = new Object();
+    private static final Map<String, PluginContainerImpl> plugins = new HashMap<>();
     public static final ClassLoader context = Thread.currentThread().getContextClassLoader();
     private static final ClassLoader parent = Thread.currentThread().getContextClassLoader().getParent();
 
+
+    public static List<PluginContainerImpl> getSortedContainers() {
+        return getContainers().stream().toList();
+    }
+
     public static Collection<PluginContainerImpl> getContainers() {
-        return plugins.values().stream().toList().reversed();
+        return plugins.values();
     }
 
     public static void loadPlugin(Path path, PluginInfo pluginInfo) {
-        try {
-            plugins.put(
-                    pluginInfo.pluginId(),
-                    new PluginContainerImpl(
-                            new PluginMetadataImpl(
-                                    pluginInfo.mainClass(),
-                                    pluginInfo.pluginId(),
-                                    path.toUri().toURL()
-                            )
-                    )
-            );
-        } catch (MalformedURLException e) {
-            throw new RuntimeException(e);
+        synchronized (lock) {
+            try {
+                plugins.put(
+                        pluginInfo.pluginId(),
+                        new PluginContainerImpl(
+                                new PluginMetadataImpl(
+                                        pluginInfo.mainClass(),
+                                        pluginInfo.pluginId(),
+                                        path.toUri().toURL(),
+                                        pluginInfo.depends() == null ? List.of() : pluginInfo.depends()
+                                )
+                        )
+                );
+            } catch (MalformedURLException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
     public static void unloadPlugin(String id) {
-        var container = plugins.get(id);
-        if (container == null) return;
-        disablePlugin(container);
-        plugins.remove(id);
+        synchronized (lock) {
+            var container = plugins.get(id);
+            if (container == null) return;
+            disablePlugin(container);
+            plugins.remove(id);
+        }
     }
 
     public static void enableAll() {
-        getContainers().forEach(PluginManagerInternal::enablePlugin);
+        getSortedContainers().forEach(PluginManagerInternal::enablePlugin);
     }
 
     public static void disableAll() {
-        getContainers().forEach(PluginManagerInternal::disablePlugin);
+        plugins.values().forEach(PluginManagerInternal::disablePlugin);
     }
 
     public static void enablePlugin(PluginContainerImpl container) {
@@ -90,7 +98,7 @@ public final class PluginManagerInternal {
     }
 
     public static <E extends Event> void post(Event event) {
-        getContainers().forEach(pl -> {
+        plugins.values().forEach(pl -> {
             if (pl.status == PluginStatus.ENABLED)
                 pl.getEventBus().post(event);
         });

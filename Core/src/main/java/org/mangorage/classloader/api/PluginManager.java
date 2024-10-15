@@ -22,4 +22,8 @@ public final class PluginManager {
     public static void unloadPlugin(String id) {
         PluginManagerInternal.unloadPlugin(id);
     }
+
+    public static boolean isPluginLoaded(String id) {
+        return PluginManagerInternal.isLoaded(id);
+    }
 }

@@ -8,7 +8,7 @@ public class ExamplePlugin implements IPlugin {
     public static int useDirect = 0;
 
     public ExamplePlugin() {
-        System.out.println("LOL 28");
+        System.out.println("Plugin 1");
         useDirect++;
     }
 

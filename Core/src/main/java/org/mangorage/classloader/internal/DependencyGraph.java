@@ -3,71 +3,83 @@ package org.mangorage.classloader.internal;
 import org.mangorage.classloader.api.IDependencyInfo;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.concurrent.ConcurrentHashMap;
 
-public class DependencyGraph {
-    private Map<String, Set<IDependencyInfo>> dependencies = new HashMap<>();
+public final class DependencyGraph {
 
-    public void addPlugin(String pluginId, Set<IDependencyInfo> dependencies) {
-        this.dependencies.put(pluginId, dependencies);
+    private final Map<String, List<? extends IDependencyInfo>> dependencies = new ConcurrentHashMap<>();
+    private List<PluginContainerImpl> list = null;
+
+    public void addPlugin(String pluginId, List<? extends IDependencyInfo> dependencyInfos) {
+        dependencies.put(pluginId, dependencyInfos == null ? List.of() : dependencyInfos);
+        list = null;
     }
 
-    public List<String> getTopologicalSortWithDependencyChecking() {
-        List<String> sortedPlugins = new ArrayList<>();
-        Map<String, Integer> inDegrees = new HashMap<>();
-        Queue<String> queue = new LinkedList<>();
+    public void removePlugin(String pluginId) {
+        dependencies.remove(pluginId);
+        list = null;
+    }
 
-        // Initialize in-degrees
-        for (Map.Entry<String, Set<IDependencyInfo>> entry : dependencies.entrySet()) {
-            for (IDependencyInfo dependency : entry.getValue()) {
-                inDegrees.put(dependency.id(), inDegrees.getOrDefault(dependency.id(), 0) + 1);
-            }
-            inDegrees.putIfAbsent(entry.getKey(), 0);
-        }
+    public List<PluginContainerImpl> computeContainerList(Map<String, PluginContainerImpl> containerMap) {
+        if (this.list != null)
+            return this.list;
+        var list = compute()
+                .stream()
+                .map(containerMap::get)
+                .toList();
+        return list;
+    }
 
-        // Find nodes with zero in-degree and add them to the queue
-        for (Map.Entry<String, Integer> entry : inDegrees.entrySet()) {
-            if (entry.getValue() == 0) {
-                queue.add(entry.getKey());
-            }
-        }
+    public List<String> compute() {
+        Set<String> loadedPlugins = new HashSet<>();
+        List<String> result = new ArrayList<>();
 
-        while (!queue.isEmpty()) {
-            String currentPlugin = queue.poll();
-            sortedPlugins.add(currentPlugin);
-
-            for (IDependencyInfo dependency : dependencies.getOrDefault(currentPlugin, Collections.emptySet())) {
-                inDegrees.put(dependency.id(), inDegrees.get(dependency.id()) - 1);
-                if (inDegrees.get(dependency.id()) == 0) {
-                    queue.add(dependency.id());
-                }
+        for (String plugin : dependencies.keySet()) {
+            if (!isPluginLoaded(plugin, loadedPlugins)) {
+                loadPlugin(plugin, loadedPlugins, result);
             }
         }
 
-        // Check for missing required dependencies and remove plugins if necessary
-        List<String> pluginsToRemove = new ArrayList<>();
-        for (String pluginId : sortedPlugins) {
-            if (dependencies.get(pluginId) == null)continue;
-            Set<String> requiredDependencies = dependencies.get(pluginId).stream()
-                    .filter(dep -> dep.required())
-                    .map(IDependencyInfo::id)
-                    .collect(Collectors.toSet());
-            if (!requiredDependencies.isEmpty() && !requiredDependencies.containsAll(sortedPlugins)) {
-                pluginsToRemove.add(pluginId);
+        return result;
+    }
+
+    private boolean isPluginLoaded(String plugin, Set<String> loadedPlugins) {
+        return loadedPlugins.contains(plugin);
+    }
+
+    private void loadPlugin(String plugin, Set<String> loadedPlugins, List<String> result) {
+        if (!dependencies.containsKey(plugin)) return;
+
+        for (IDependencyInfo dep : dependencies.get(plugin)) {
+            if (!isPluginLoaded(dep.id(), loadedPlugins)) {
+                loadPlugin(dep.id(), loadedPlugins, result);
             }
         }
 
-        // Remove plugins that have missing required dependencies
-        sortedPlugins.removeAll(pluginsToRemove);
+        // Ensure all required dependencies are loaded
+        boolean allRequiredDependenciesLoaded = dependencies.get(plugin).stream()
+                .filter(IDependencyInfo::required)
+                .allMatch(dep -> isPluginLoaded(dep.id(), loadedPlugins));
 
-        return sortedPlugins;
+        if (allRequiredDependenciesLoaded) {
+            loadedPlugins.add(plugin);
+            result.add(plugin);
+
+            // Ensure optional dependencies are loaded after the plugin
+            dependencies.get(plugin).stream()
+                    .filter(dep -> !dep.required())
+                    .forEach(dep -> {
+                        if (!isPluginLoaded(dep.id(), loadedPlugins)) {
+                            loadPlugin(dep.id(), loadedPlugins, result);
+                        }
+                    });
+        }
     }
 }
+

@@ -8,24 +8,30 @@ import org.mangorage.classloader.event.Event;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class PluginManagerInternal {
     private static final Object lock = new Object();
-    private static final Map<String, PluginContainerImpl> plugins = new HashMap<>();
+    private static final Map<String, PluginContainerImpl> plugins = new ConcurrentHashMap<>();
+    private static final DependencyGraph graph = new DependencyGraph();
+
     public static final ClassLoader context = Thread.currentThread().getContextClassLoader();
     private static final ClassLoader parent = Thread.currentThread().getContextClassLoader().getParent();
 
 
     public static List<PluginContainerImpl> getSortedContainers() {
-        return getContainers().stream().toList().reversed();
+        return graph.computeContainerList(plugins);
     }
 
     public static Collection<PluginContainerImpl> getContainers() {
         return plugins.values();
+    }
+
+    public static boolean isLoaded(String id) {
+        return plugins.containsKey(id);
     }
 
     public static void loadPlugin(Path path, PluginInfo pluginInfo) {
@@ -42,6 +48,7 @@ public final class PluginManagerInternal {
                                 )
                         )
                 );
+                graph.addPlugin(pluginInfo.pluginId(), pluginInfo.depends());
             } catch (MalformedURLException e) {
                 throw new RuntimeException(e);
             }
@@ -54,6 +61,7 @@ public final class PluginManagerInternal {
             if (container == null) return;
             disablePlugin(container);
             plugins.remove(id);
+            graph.removePlugin(id);
         }
     }
 
@@ -62,7 +70,7 @@ public final class PluginManagerInternal {
     }
 
     public static void disableAll() {
-        plugins.values().forEach(PluginManagerInternal::disablePlugin);
+        getContainers().forEach(PluginManagerInternal::disablePlugin);
     }
 
     public static void enablePlugin(PluginContainerImpl container) {

@@ -4,7 +4,9 @@ import org.mangorage.classloader.api.IPlugin;
 
 public class ExamplePlugin implements IPlugin {
 
-    public ExamplePlugin() {}
+    public ExamplePlugin() {
+        System.out.println("Plugin 3");
+    }
 
     @Override
     public void onLoad() {

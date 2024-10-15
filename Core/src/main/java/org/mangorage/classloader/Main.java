@@ -28,13 +28,13 @@ public class Main {
                         new InputStreamReader(pluginFile.getInputStream(infoEntry)),
                         PluginInfo.class
                 );
-                PluginManagerInternal.addPlugin(plp, info.mainClass());
+                PluginManagerInternal.addPlugin(plp, info);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         });
 
-        PluginManagerInternal.load();
+        PluginManagerInternal.enableAll();
 
         new Thread(() -> {
             while (true) {
@@ -47,8 +47,8 @@ public class Main {
                 Thread.sleep(5000);
 
                 System.out.println("Reloading");
-                PluginManagerInternal.unload();
-                PluginManagerInternal.load();
+                PluginManagerInternal.disableAll();
+                PluginManagerInternal.enableAll();
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }

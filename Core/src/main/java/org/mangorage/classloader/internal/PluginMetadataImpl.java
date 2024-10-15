@@ -4,14 +4,4 @@ import org.mangorage.classloader.api.IPluginMetadata;
 
 import java.net.URL;
 
-public record PluginMetadataImpl(String main, URL pl) implements IPluginMetadata {
-    @Override
-    public String mainClass() {
-        return main;
-    }
-
-    @Override
-    public URL pluginURL() {
-        return pl;
-    }
-}
+public record PluginMetadataImpl(String mainClass, String pluginId, URL pluginURL) implements IPluginMetadata {}

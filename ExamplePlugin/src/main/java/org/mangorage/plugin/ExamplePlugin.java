@@ -5,6 +5,7 @@ import org.mangorage.classloader.api.PluginManager;
 import org.mangorage.classloader.event.ExampleEvent;
 
 public class ExamplePlugin implements IPlugin {
+    private static final boolean useDirect = true;
 
     public ExamplePlugin() {
         System.out.println("LOL 28");
@@ -16,25 +17,20 @@ public class ExamplePlugin implements IPlugin {
             //System.out.println("OBV");
         });
 
-        if (!PluginManager.load)
-            System.out.println("SCHEDULED");
-            PluginManager.schedule(this, (s) -> {
-                while (s.isRunning()) {
-                    System.out.println(s.isRunning());
-                    System.out.println(s.getId());
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                    System.out.println("LOL");
+        PluginManager.schedule(this, () -> {
+            while (true) {
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
                 }
-            });
-        PluginManager.load = true;
+                System.out.println("LOL 23 -> " + this);
+            }
+        });
     }
 
     @Override
     public void unload() {
-
+        PluginManager.remove("example");
     }
 }

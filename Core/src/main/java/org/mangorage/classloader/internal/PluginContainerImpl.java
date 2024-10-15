@@ -1,40 +1,23 @@
 package org.mangorage.classloader.internal;
 
 import org.mangorage.classloader.api.IPlugin;
+import org.mangorage.classloader.api.IPluginClassloader;
 import org.mangorage.classloader.api.IPluginContainer;
 import org.mangorage.classloader.api.IPluginMetadata;
 import org.mangorage.classloader.api.ITask;
-import org.mangorage.classloader.api.ITaskStatus;
 import org.mangorage.classloader.api.event.IEventBus;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
 
 public final class PluginContainerImpl implements IPluginContainer {
-    record TaskHolder(ITask iTask, AtomicBoolean status, UUID uuid) implements ITaskStatus {
-        @Override
-        public boolean isRunning() {
-            return status.get();
-        }
-
-        @Override
-        public UUID getId() {
-            return uuid;
-        }
-    }
-
     private final IPluginMetadata metadata;
 
     private IPlugin plugin;
-    private ClassLoader classLoader;
+    private PluginClassloader classLoader;
     private IEventBus bus;
     private ExecutorService executorService;
-    private final List<TaskHolder> taskHolders = new ArrayList<>();
+
+    PluginStatus status = PluginStatus.DISABLED;
 
     public PluginContainerImpl(IPluginMetadata metadata) {
         this.metadata = metadata;
@@ -56,23 +39,27 @@ public final class PluginContainerImpl implements IPluginContainer {
     }
 
     @Override
+    public IPluginClassloader getClassloader() {
+        return classLoader;
+    }
+
+    @Override
     public void schedule(ITask task) {
-        var holder = new TaskHolder(task, new AtomicBoolean(true), UUID.randomUUID());
-        taskHolders.add(holder);
-        executorService.submit(() -> task.run(holder));
+        executorService.submit(task::run);
     }
 
     public void disable() {
+        this.status = PluginStatus.DISABLED;
+        plugin.unload();
         this.executorService.shutdownNow();
         this.executorService.close();
-        this.taskHolders.forEach(holder -> holder.status().set(false));
-        this.taskHolders.clear();
     }
 
-    public void setActiveState(IPlugin plugin, ClassLoader classLoader) {
+    public void setActiveState(IPlugin plugin, PluginClassloader classLoader) {
         this.plugin = plugin;
         this.classLoader = classLoader;
         this.bus = new EventBus();
         this.executorService = Executors.newCachedThreadPool();
+        this.status = PluginStatus.ENABLED;
     }
 }

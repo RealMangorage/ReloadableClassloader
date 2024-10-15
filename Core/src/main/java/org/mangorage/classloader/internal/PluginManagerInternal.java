@@ -4,28 +4,27 @@ import org.mangorage.classloader.api.IPlugin;
 import org.mangorage.classloader.api.IPluginContainer;
 import org.mangorage.classloader.event.Event;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class PluginManagerInternal {
-    enum State {
-        LOADED,
-        UNLOADED;
-    }
-
-    private static final List<PluginContainerImpl> plugins = new ArrayList<>();
+    private static final Map<String, PluginContainerImpl> plugins = new ConcurrentHashMap<>();
     private static final ClassLoader parent = Thread.currentThread().getContextClassLoader().getParent();
-    private static State activeState = State.UNLOADED;
 
-    public static void addPlugin(Path path, String mainClass) {
+    public static void addPlugin(Path path, PluginInfo pluginInfo) {
         try {
-            plugins.add(
+            plugins.put(
+                    pluginInfo.pluginId(),
                     new PluginContainerImpl(
                             new PluginMetadataImpl(
-                                    mainClass,
+                                    pluginInfo.mainClass(),
+                                    pluginInfo.pluginId(),
                                     path.toUri().toURL()
                             )
                     )
@@ -35,42 +34,52 @@ public final class PluginManagerInternal {
         }
     }
 
-    public static void load() {
-        if (activeState != State.UNLOADED) return;
-        plugins.forEach(pl -> {
-            try {
-                try (var cl = new PluginClassloader(parent)) {
-                    Thread.currentThread().setContextClassLoader(cl);
-                    var plugin = cl.loadPlugin(pl);
-                    ((PluginContainerImpl) pl).setActiveState(plugin, cl);
-                    plugin.onLoad();
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
-        Thread.currentThread().setContextClassLoader(parent);
-        activeState = State.LOADED;
+    public static void removePlugin(String id) {
+        var container = plugins.get(id);
+        if (container == null) return;
+        disablePlugin(container);
+        plugins.remove(id);
     }
 
-    public static void unload() {
-        if (activeState != State.LOADED) return;
-        plugins.forEach(pl -> {
-            pl.getPlugin().unload();
-            pl.disable();
-        });
-        activeState = State.UNLOADED;
+    public static void enableAll() {
+        plugins.values().forEach(PluginManagerInternal::enablePlugin);
+    }
+
+    public static void disableAll() {
+        plugins.values().forEach(PluginManagerInternal::disablePlugin);
+    }
+
+    public static void enablePlugin(PluginContainerImpl container) {
+        if (container.status == PluginStatus.ENABLED) return;
+        try (var cl = new PluginClassloader(container, parent)) {
+            Thread.currentThread().setContextClassLoader(cl);
+            var plugin = cl.loadPlugin();
+            container.setActiveState(plugin, cl);
+            plugin.onLoad();
+            Thread.currentThread().setContextClassLoader(parent);
+        } catch (IOException | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void disablePlugin(PluginContainerImpl container) {
+        if (container.status == PluginStatus.DISABLED) return;
+        plugins.values().forEach(PluginContainerImpl::disable);
     }
 
     public static Optional<IPluginContainer> findContainer(IPlugin plugin) {
-        for (IPluginContainer iPluginContainer : plugins) {
+        for (IPluginContainer iPluginContainer : plugins.values()) {
             if (iPluginContainer.getPlugin() == plugin)
                 return Optional.of(iPluginContainer);
         }
+
         return Optional.empty();
     }
 
     public static <E extends Event> void post(Event event) {
-        plugins.forEach(pl -> pl.getEventBus().post(event));
+        plugins.values().forEach(pl -> {
+            if (pl.status == PluginStatus.ENABLED)
+                pl.getEventBus().post(event);
+        });
     }
 }

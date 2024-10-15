@@ -17,7 +17,8 @@ public class Main {
     public static void main(String[] args) {
 
         List<Path> manualPlugins = List.of(
-                Path.of("F:\\Minecraft Forge Projects\\Classloading\\ExamplePlugin\\build\\libs\\ExamplePlugin.jar")
+                Path.of("F:\\Minecraft Forge Projects\\Classloading\\ExamplePlugin\\build\\libs\\ExamplePlugin.jar"),
+                Path.of("F:\\Minecraft Forge Projects\\Classloading\\ExamplePlugin2\\build\\libs\\ExamplePlugin2.jar")
         );
 
         manualPlugins.forEach(plp -> {
@@ -28,7 +29,7 @@ public class Main {
                         new InputStreamReader(pluginFile.getInputStream(infoEntry)),
                         PluginInfo.class
                 );
-                PluginManagerInternal.unloadPlugin(plp, info);
+                PluginManagerInternal.loadPlugin(plp, info);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -50,7 +51,7 @@ public class Main {
                 PluginManagerInternal.disableAll();
                 PluginManagerInternal.enableAll();
             } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+                System.out.println("Fatal Error");
             }
         }
     }

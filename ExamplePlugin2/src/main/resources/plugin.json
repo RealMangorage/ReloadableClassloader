@@ -1,0 +1,4 @@
+{
+  "pluginId": "example2",
+  "mainClass": "org.mangorage.plugin2.ExamplePlugin"
+}

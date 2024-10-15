@@ -49,28 +49,47 @@ public final class PluginContainerImpl implements IPluginContainer {
         return classLoader;
     }
 
+    PluginClassloader getClassloaderInternal() {
+        return classLoader;
+    }
+
     @Override
     public void schedule(ITask task) {
         executorService.getOptional().ifPresent(s -> s.submit(task::run));
     }
 
-    public void disable() {
-        this.status = PluginStatus.DISABLED;
-        this.plugin.unload();
+    void enable(PluginClassloader classLoader) throws Throwable {
+        setActiveState(classLoader.loadPlugin(), classLoader);
+    }
 
-        this.plugin = null;
+    void disable() {
+        this.status = PluginStatus.DISABLED;
+
+        if (this.plugin != null) {
+            try {
+                this.plugin.unload();
+            } catch (Throwable e) {
+                System.out.println("Failed to unload plugin %s, forcing disable anyways".formatted(metadata.pluginId()));
+                e.printStackTrace();
+            }
+            this.plugin = null;
+        }
+
         this.classLoader = null;
 
         this.executorService.unloadValue();
         this.bus.unloadValue();
     }
 
-    public void setActiveState(IPlugin plugin, PluginClassloader classLoader) {
+    void setActiveState(IPlugin plugin, PluginClassloader classLoader) {
         this.plugin = plugin;
         this.classLoader = classLoader;
 
         this.bus.loadValue();
         this.executorService.loadValue();
+
         this.status = PluginStatus.ENABLED;
+
+        this.plugin.onLoad();
     }
 }

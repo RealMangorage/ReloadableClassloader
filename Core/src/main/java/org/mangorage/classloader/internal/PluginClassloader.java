@@ -16,7 +16,34 @@ public final class PluginClassloader extends URLClassLoader implements IPluginCl
         addURL(plugin.getMetadata().pluginURL());
     }
 
-    IPlugin loadPlugin() throws ClassNotFoundException, InstantiationException, IllegalAccessException {
+    @Override
+    protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+        Class<?> located = null;
+        try {
+            located = super.loadClass(name, resolve);
+            var a = 1;
+        } catch (Throwable throwable) {
+            for (PluginContainerImpl container : PluginManagerInternal.getContainers()) {
+                if (container == plugin) continue;
+                try {
+                    located = container.getClassloaderInternal().loadInternalClass(name, resolve);
+                    if (located != null)
+                        break;
+                } catch (Throwable ignored) {}
+            }
+        }
+
+        if (located != null)
+            return located;
+        throw new ClassNotFoundException("Could not find class %s".formatted(name));
+    }
+
+    Class<?> loadInternalClass(String name, boolean resolve) throws ClassNotFoundException {
+        return super.loadClass(name, resolve);
+    }
+
+
+    IPlugin loadPlugin() throws Throwable {
         var clz = Class.forName(plugin.getMetadata().mainClass(), false, this);
         if (!IPlugin.class.isAssignableFrom(clz))
             throw new IllegalStateException("Main class of Plugin must implement org.mangorage.classloader.api.IPlugin");

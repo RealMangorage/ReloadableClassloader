@@ -36,6 +36,7 @@ public final class ReloadableValue<T> {
     }
 
     public void unloadValue() {
+        if (this.value == null) return;
         this.unloader.accept(this.value);
         this.value = null;
     }

@@ -4,18 +4,28 @@ import org.mangorage.classloader.api.IPlugin;
 import org.mangorage.classloader.api.IPluginContainer;
 import org.mangorage.classloader.event.Event;
 
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class PluginManagerInternal {
     private static final Map<String, PluginContainerImpl> plugins = new ConcurrentHashMap<>();
+    public static final ClassLoader context = Thread.currentThread().getContextClassLoader();
     private static final ClassLoader parent = Thread.currentThread().getContextClassLoader().getParent();
 
-    public static void unloadPlugin(Path path, PluginInfo pluginInfo) {
+    public static Collection<PluginContainerImpl> getContainers() {
+        return plugins.values();
+    }
+
+    public static void loadPlugin(Path path, PluginInfo pluginInfo) {
         try {
             plugins.put(
                     pluginInfo.pluginId(),
@@ -51,18 +61,23 @@ public final class PluginManagerInternal {
         if (container.status == PluginStatus.ENABLED) return;
         try (var cl = new PluginClassloader(container, parent)) {
             Thread.currentThread().setContextClassLoader(cl);
-            var plugin = cl.loadPlugin();
-            container.setActiveState(plugin, cl);
-            plugin.onLoad();
-            Thread.currentThread().setContextClassLoader(parent);
-        } catch (IOException | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
-            throw new RuntimeException(e);
+            container.enable(cl);
+            Thread.currentThread().setContextClassLoader(context);
+        } catch (Throwable e) {
+            System.out.println("Failed to enable Plugin %s, disabling".formatted(container.getMetadata().pluginId()));
+            e.printStackTrace();
+            container.disable();
         }
     }
 
     public static void disablePlugin(PluginContainerImpl container) {
         if (container.status == PluginStatus.DISABLED) return;
-        plugins.values().forEach(PluginContainerImpl::disable);
+        try {
+            container.disable();
+        } catch (Throwable e) {
+            System.out.println("Failed to disable plugin");
+            e.printStackTrace();
+        }
     }
 
     public static Optional<IPluginContainer> findContainer(IPlugin plugin) {

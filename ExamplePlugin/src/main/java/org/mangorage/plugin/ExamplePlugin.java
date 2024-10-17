@@ -3,8 +3,9 @@ package org.mangorage.plugin;
 import org.mangorage.classloader.api.IPlugin;
 import org.mangorage.classloader.api.PluginManager;
 import org.mangorage.classloader.event.ExampleEvent;
+import org.mangorage.classloader.util.JavaPlugin;
 
-public class ExamplePlugin implements IPlugin {
+public class ExamplePlugin extends JavaPlugin {
     public static int useDirect = 0;
 
     public ExamplePlugin() {
@@ -32,6 +33,6 @@ public class ExamplePlugin implements IPlugin {
 
     @Override
     public void unload() {
-        PluginManager.unloadPlugin("example");
+        //PluginManager.unloadPlugin("example");
     }
 }

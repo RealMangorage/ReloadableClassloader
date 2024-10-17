@@ -60,11 +60,15 @@ public final class PluginManagerInternal {
     }
 
     public static void enableAll() {
-        getContainers().forEach(PluginManagerInternal::enablePlugin);
+        getContainers().stream()
+                .parallel()
+                .forEachOrdered(PluginManagerInternal::enablePlugin);
     }
 
     public static void disableAll() {
-        getContainers().forEach(PluginManagerInternal::disablePlugin);
+        getContainers().stream()
+                .parallel()
+                .forEachOrdered(PluginManagerInternal::disablePlugin);
     }
 
     public static void enablePlugin(PluginContainerImpl container) {

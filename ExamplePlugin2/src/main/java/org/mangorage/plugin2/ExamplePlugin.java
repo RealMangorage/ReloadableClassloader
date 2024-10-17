@@ -1,21 +1,18 @@
 package org.mangorage.plugin2;
 
-import org.mangorage.classloader.api.IPlugin;
-import org.mangorage.classloader.api.PluginManager;
+import org.mangorage.classloader.util.JavaPlugin;
 
-public class ExamplePlugin implements IPlugin {
+public class ExamplePlugin extends JavaPlugin {
     public ExamplePlugin() {
         System.out.println("Plugin 2");
     }
 
     @Override
     public void onLoad() {
-        if (PluginManager.isPluginLoaded("example"))
-            Test.init();
+        Test.init();
     }
 
     @Override
     public void unload() {
-
     }
 }
